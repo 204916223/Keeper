@@ -19,7 +19,7 @@ GitHub Actions 会自动构建 macOS、Windows、Linux 安装包并上传到 Rel
 
 ## macOS 无法打开
 
-如果 macOS 提示 `Keeper 已损坏，无法打开`，通常是因为当前安装包还没有 Apple Developer ID 签名和公证。可以临时执行：
+当前测试包默认跳过 Apple Developer ID 签名和公证。如果 macOS 提示 `Keeper 已损坏，无法打开`，可以临时执行：
 
 ```sh
 xattr -dr com.apple.quarantine /Applications/Keeper.app
@@ -27,7 +27,7 @@ xattr -dr com.apple.quarantine /Applications/Keeper.app
 
 然后再从 `/Applications` 打开 Keeper。
 
-要让安装包下载后直接打开，需要在 GitHub 仓库中配置这些 Actions Secrets：
+之后要让安装包下载后直接打开，再恢复签名并配置这些 Actions Secrets：
 
 - `CSC_LINK`: Developer ID Application 证书 `.p12` 的 base64 内容
 - `CSC_KEY_PASSWORD`: 证书密码

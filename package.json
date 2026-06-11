@@ -45,6 +45,7 @@
       "node_modules/uiohook-napi/prebuilds/**/*"
     ],
     "mac": {
+      "identity": null,
       "category": "public.app-category.entertainment"
     },
     "win": {
