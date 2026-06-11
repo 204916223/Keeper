@@ -17,15 +17,24 @@ body {
   height: 100vh;
   display: grid;
   place-items: center;
-  -webkit-app-region: drag;
 }
 
 .pet-stage {
   width: 128px;
   height: 128px;
+  position: relative;
   display: grid;
   place-items: center;
-  -webkit-app-region: drag;
+  cursor: grab;
+  touch-action: none;
+}
+
+.pet-stage.is-dragging {
+  cursor: grabbing;
+}
+
+.pet-stage.is-shocked {
+  animation: shock-shake 560ms steps(2, end);
 }
 
 .pet-image {
@@ -34,4 +43,59 @@ body {
   pointer-events: none;
   image-rendering: pixelated;
   image-rendering: crisp-edges;
+}
+
+.shock-mark {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 22px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  color: #fff6c4;
+  font: 700 26px/1 Arial, sans-serif;
+  text-shadow:
+    0 2px 0 #8e2500,
+    2px 0 0 #8e2500,
+    0 -2px 0 #8e2500,
+    -2px 0 0 #8e2500;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px) scale(0.85);
+}
+
+.pet-stage.is-shocked .shock-mark {
+  animation: shock-mark-pop 560ms steps(2, end);
+}
+
+@keyframes shock-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  12.5%,
+  62.5% {
+    transform: translateX(-3px);
+  }
+
+  37.5%,
+  87.5% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes shock-mark-pop {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.85);
+  }
+
+  12.5%,
+  87.5% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }

@@ -1,5 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const { PET_STATUS } = require('./main/constants');
+const { createGravityController } = require('./main/gravity');
+const { createManualDragController } = require('./main/manual-drag');
 const { createPetMotionController } = require('./main/pet-motion');
 const { showPetContextMenu } = require('./main/pet-context-menu');
 const { createPetWindow } = require('./main/pet-window');
@@ -9,8 +11,11 @@ const { getDefaultBounds } = require('./main/window-bounds');
 let mainWindow;
 let trayController;
 let motionController;
+let gravityController;
+let dragController;
 let isQuitting = false;
 let clickThrough = false;
+let isDragging = false;
 
 function updateTrayMenu() {
   trayController?.updateMenu();
@@ -54,6 +59,16 @@ function toggleWindowVisibility() {
 function resetWindowPosition() {
   motionController.cancelMovement();
   mainWindow?.setBounds(getDefaultBounds());
+
+  if (gravityController.getEnabled()) {
+    const isFalling = gravityController.dropToGround();
+
+    if (!isFalling) {
+      resumeStandbyAfterInteraction();
+    }
+  } else {
+    resumeStandbyAfterInteraction();
+  }
 }
 
 function setClickThrough(enabled) {
@@ -68,13 +83,35 @@ function setClickThrough(enabled) {
   updateTrayMenu();
 }
 
+function resumeStandbyAfterInteraction() {
+  if (
+    !isDragging &&
+    mainWindow?.isVisible() &&
+    motionController.getStatus() === PET_STATUS.STANDBY
+  ) {
+    motionController.startWalking();
+  }
+}
+
+function setGravityEnabled(enabled) {
+  const isFalling = gravityController.setEnabled(enabled);
+
+  if (!isFalling) {
+    resumeStandbyAfterInteraction();
+  }
+
+  updateTrayMenu();
+}
+
 function createWindow() {
   mainWindow = createPetWindow({
     onContextMenu: () => showPetContextMenu({
+      getGravityEnabled: gravityController.getEnabled,
       getStatus: motionController.getStatus,
       mainWindow,
       onHide: hideWindow,
       onQuit: quitApp,
+      setGravityEnabled,
       setStatus: motionController.setStatus,
     }),
     onClose: (event) => {
@@ -88,24 +125,33 @@ function createWindow() {
     onShow: () => {
       updateTrayMenu();
 
-      if (motionController.getStatus() === PET_STATUS.STANDBY) {
-        motionController.startWalking();
+      if (gravityController.getEnabled()) {
+        const isFalling = gravityController.dropToGround();
+
+        if (!isFalling) {
+          resumeStandbyAfterInteraction();
+        }
+      } else if (motionController.getStatus() === PET_STATUS.STANDBY) {
+        resumeStandbyAfterInteraction();
       }
     },
     onHide: () => {
       updateTrayMenu();
       motionController.stopWalking();
       motionController.cancelMovement();
+      gravityController.cancelFall();
     },
   });
 }
 
 function createTray() {
   trayController = createKeeperTray({
+    getGravityEnabled: gravityController.getEnabled,
     getClickThrough: () => clickThrough,
     getWindow: () => mainWindow,
     onQuit: quitApp,
     onResetPosition: resetWindowPosition,
+    onToggleGravity: () => setGravityEnabled(!gravityController.getEnabled()),
     onToggleClickThrough: () => setClickThrough(!clickThrough),
     onToggleVisibility: toggleWindowVisibility,
   });
@@ -116,12 +162,39 @@ function registerIpcHandlers() {
   ipcMain.handle('window:hide', hideWindow);
   ipcMain.handle('window:reset-position', resetWindowPosition);
   ipcMain.handle('window:set-click-through', (_event, enabled) => setClickThrough(Boolean(enabled)));
+  ipcMain.on('pet:drag-start', (_event, point) => dragController.start(point));
+  ipcMain.on('pet:drag-move', (_event, point) => dragController.move(point));
+  ipcMain.on('pet:drag-end', () => dragController.end());
 }
 
 app.whenReady().then(() => {
   motionController = createPetMotionController({
     getWindow: () => mainWindow,
     sendAnimation: sendPetAnimation,
+  });
+  gravityController = createGravityController({
+    getWindow: () => mainWindow,
+    onFallEnd: resumeStandbyAfterInteraction,
+    onFallStart: () => {
+      motionController.stopWalking();
+      motionController.cancelMovement();
+    },
+  });
+  dragController = createManualDragController({
+    getWindow: () => mainWindow,
+    onDragStart: () => {
+      isDragging = true;
+      gravityController.cancelFall();
+      motionController.stopWalking();
+      motionController.cancelMovement();
+    },
+    onDragEnd: () => {
+      isDragging = false;
+
+      if (!gravityController.dropToGround()) {
+        resumeStandbyAfterInteraction();
+      }
+    },
   });
 
   createWindow();

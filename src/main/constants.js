@@ -1,5 +1,6 @@
 const WINDOW_WIDTH = 160;
 const WINDOW_HEIGHT = 160;
+const PET_CANVAS_SIZE = 128;
 
 const PET_STATUS = {
   DO_NOT_DISTURB: 'do-not-disturb',
@@ -22,8 +23,16 @@ const DEFAULT_MOTION_PROFILE = {
 
 const WALK_FRAME_MS = 12;
 
+const DEFAULT_GRAVITY_PROFILE = {
+  enabled: true,
+  fallDurationMs: 900,
+  frameMs: 12,
+};
+
 module.exports = {
+  DEFAULT_GRAVITY_PROFILE,
   DEFAULT_MOTION_PROFILE,
+  PET_CANVAS_SIZE,
   PET_ANIMATION,
   PET_STATUS,
   WALK_FRAME_MS,

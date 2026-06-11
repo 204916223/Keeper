@@ -1,56 +1,25 @@
 # Keeper
 
-Keeper is a tiny cross-platform desktop pet built with Electron. It starts as a
-transparent, always-on-top pixel pet window that can be dragged around the
-desktop and hidden from the tray.
+跨平台桌面宠物应用，内置桌宠：火史莱姆。
 
-## Requirements
+## 下载
 
-- Node.js 20 or newer
-- npm
+安装包会在 GitHub Release 中发布：
 
-## Development
+[下载最新版 Keeper](https://github.com/204916223/Keeper/releases/latest)
+
+如果还没有可下载文件，说明当前仓库还没有推送版本 tag。发布新版本：
+
+```sh
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+GitHub Actions 会自动构建 macOS、Windows、Linux 安装包并上传到 Release。
+
+## 本地运行
 
 ```sh
 npm install
 npm start
 ```
-
-## Packaging
-
-```sh
-npm run dist:mac
-npm run dist:win
-npm run dist:linux
-```
-
-Electron can target macOS, Windows, and Linux, but release builds should be
-verified on each operating system. Some installer formats are best produced on
-their target platform.
-
-## Current Features
-
-- Frameless transparent pet window
-- Always-on-top behavior
-- Drag the pet anywhere on the desktop
-- Tray menu for show, hide, reset, click-through, and quit
-- Pixel pet rendering with a fixed 128x128 character canvas
-- Idle and walking frame animations
-
-## Pet Assets
-
-Keeper ships with one built-in desktop pet: `火史莱姆` (`fire-slime`).
-Its frames are in `src/renderer/assets/pets/fire-slime/`, grouped by action:
-
-- `idle/idle.apng`
-- `walk-left/walk-left.apng`
-- `walk-right/walk-right.apng`
-
-Each action folder also contains a `frames/` directory with the source PNG
-frames for that animation. The built-in pet metadata is stored in
-`src/renderer/assets/pets/fire-slime/pet.json`.
-
-Custom pet assets should use a 128x128 canvas with a transparent background.
-PNG, WebP, and SVG are good formats. The renderer plays image frames from named
-animation sets, so each behavior can provide its own sequence, such as idle,
-feed, play, sleep, and hungry.

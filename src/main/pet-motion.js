@@ -29,6 +29,10 @@ function createPetMotionController({ getWindow, sendAnimation }) {
     sendAnimation(PET_ANIMATION.IDLE);
   }
 
+  function isActive() {
+    return isMoving;
+  }
+
   function canScheduleWalk() {
     const petWindow = getWindow();
 
@@ -190,6 +194,7 @@ function createPetMotionController({ getWindow, sendAnimation }) {
   return {
     cancelMovement,
     getStatus,
+    isActive,
     setStatus,
     startWalking,
     stopWalking,

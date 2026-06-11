@@ -2,10 +2,12 @@ const { Menu, Tray } = require('electron');
 const { createTrayIcon } = require('./tray-icon');
 
 function createKeeperTray({
+  getGravityEnabled,
   getClickThrough,
   getWindow,
   onQuit,
   onResetPosition,
+  onToggleGravity,
   onToggleClickThrough,
   onToggleVisibility,
 }) {
@@ -28,6 +30,10 @@ function createKeeperTray({
       {
         label: '重置位置',
         click: onResetPosition,
+      },
+      {
+        label: getGravityEnabled() ? '关闭重力' : '开启重力',
+        click: onToggleGravity,
       },
       {
         label: getClickThrough() ? '关闭点击穿透' : '开启点击穿透',

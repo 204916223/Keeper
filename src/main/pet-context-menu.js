@@ -1,7 +1,15 @@
 const { Menu } = require('electron');
 const { PET_STATUS } = require('./constants');
 
-function showPetContextMenu({ getStatus, mainWindow, onHide, onQuit, setStatus }) {
+function showPetContextMenu({
+  getGravityEnabled,
+  getStatus,
+  mainWindow,
+  onHide,
+  onQuit,
+  setGravityEnabled,
+  setStatus,
+}) {
   if (!mainWindow || mainWindow.isDestroyed()) {
     return;
   }
@@ -23,6 +31,12 @@ function showPetContextMenu({ getStatus, mainWindow, onHide, onQuit, setStatus }
           click: () => setStatus(PET_STATUS.STANDBY),
         },
       ],
+    },
+    {
+      label: '重力',
+      type: 'checkbox',
+      checked: getGravityEnabled(),
+      click: (menuItem) => setGravityEnabled(menuItem.checked),
     },
     { type: 'separator' },
     {
