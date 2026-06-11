@@ -19,9 +19,28 @@
             </label>
           </section>
 
-          <section class="settings-group" aria-labelledby="windowSettingsTitle">
-            <h2 class="settings-group-title" id="windowSettingsTitle">窗口设置</h2>
-            <button class="primary-button" id="showPetButton" type="button">展示 keeper</button>
+          <section class="settings-group" aria-labelledby="aiSettingsTitle">
+            <h2 class="settings-group-title" id="aiSettingsTitle">AI 配置</h2>
+            <label class="setting-row" for="aiProviderSelect">
+              <span>服务商</span>
+              <select id="aiProviderSelect"></select>
+            </label>
+            <label class="setting-row" for="aiModelInput">
+              <span>模型</span>
+              <input id="aiModelInput" autocomplete="off" />
+            </label>
+            <label class="setting-row" for="aiBaseUrlInput">
+              <span>Base URL</span>
+              <input id="aiBaseUrlInput" autocomplete="off" />
+            </label>
+            <label class="setting-row" for="aiApiKeyInput">
+              <span>API Key</span>
+              <input id="aiApiKeyInput" autocomplete="off" type="password" />
+            </label>
+            <div class="settings-inline-actions">
+              <span class="settings-status" id="aiConfigStatus">未配置</span>
+              <button class="primary-button" id="saveAiConfigButton" type="button">保存</button>
+            </div>
           </section>
         </div>
       </section>
@@ -39,20 +58,20 @@
         <h2 class="sr-only" id="statusTitle">keeper状态</h2>
         <dl class="status-list">
           <div class="status-row">
-            <dt>状态</dt>
-            <dd id="petStatus">待机</dd>
+            <dt>等级</dt>
+            <dd id="levelStat">01/99</dd>
           </div>
           <div class="status-row">
-            <dt>名字</dt>
-            <dd id="petName">冰史莱姆</dd>
+            <dt>生命</dt>
+            <dd id="lifeStat">01/99</dd>
           </div>
           <div class="status-row">
-            <dt>重力</dt>
-            <dd id="gravityStatus">开启</dd>
+            <dt>攻击</dt>
+            <dd id="attackStat">01/99</dd>
           </div>
           <div class="status-row">
-            <dt>桌宠</dt>
-            <dd id="visibleStatus">显示</dd>
+            <dt>防御</dt>
+            <dd id="defenseStat">01/99</dd>
           </div>
         </dl>
       </section>

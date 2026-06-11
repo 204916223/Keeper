@@ -1,6 +1,6 @@
 const { screen } = require('electron');
 const {
-  DEFAULT_MOTION_PROFILE,
+  MOTION_PROFILES,
   PET_ANIMATION,
   PET_STATUS,
   WALK_FRAME_MS,
@@ -13,10 +13,14 @@ function randomInteger(min, max) {
 
 function createPetMotionController({ getWindow, sendAnimation }) {
   let petStatus = PET_STATUS.STANDBY;
-  let motionProfile = { ...DEFAULT_MOTION_PROFILE };
   let walkTimer;
   let moveTimer;
   let isMoving = false;
+  let homeX;
+
+  function getMotionProfile() {
+    return MOTION_PROFILES[petStatus] || MOTION_PROFILES[PET_STATUS.STANDBY];
+  }
 
   function getStatus() {
     return petStatus;
@@ -37,7 +41,7 @@ function createPetMotionController({ getWindow, sendAnimation }) {
     const petWindow = getWindow();
 
     return (
-      petStatus === PET_STATUS.STANDBY &&
+      petStatus !== PET_STATUS.DO_NOT_DISTURB &&
       petWindow &&
       !petWindow.isDestroyed() &&
       petWindow.isVisible() &&
@@ -56,7 +60,7 @@ function createPetMotionController({ getWindow, sendAnimation }) {
     walkTimer = setTimeout(() => {
       walkTimer = undefined;
       moveRandomly();
-    }, motionProfile.walkIntervalMs);
+    }, getMotionProfile().walkIntervalMs);
   }
 
   function animateToX(targetX, stepUnits) {
@@ -73,7 +77,7 @@ function createPetMotionController({ getWindow, sendAnimation }) {
     const startX = startBounds.x;
     const direction = targetX < startX ? PET_ANIMATION.WALK_LEFT : PET_ANIMATION.WALK_RIGHT;
     const startTime = Date.now();
-    const durationMs = stepUnits * motionProfile.walkStepDurationMs;
+    const durationMs = stepUnits * getMotionProfile().walkStepDurationMs;
     let lastX = startX;
 
     // APNG walk animations loop while this whole multi-step move is active.
@@ -88,7 +92,7 @@ function createPetMotionController({ getWindow, sendAnimation }) {
         return;
       }
 
-      if (petStatus !== PET_STATUS.STANDBY || !currentWindow.isVisible()) {
+      if (petStatus === PET_STATUS.DO_NOT_DISTURB || !currentWindow.isVisible()) {
         cancelMovement();
         return;
       }
@@ -114,6 +118,7 @@ function createPetMotionController({ getWindow, sendAnimation }) {
   }
 
   function getAvailableStepUnits(bounds, direction, workArea) {
+    const motionProfile = getMotionProfile();
     const availablePx = direction < 0
       ? bounds.x - workArea.x
       : workArea.x + workArea.width - (bounds.x + bounds.width);
@@ -121,9 +126,26 @@ function createPetMotionController({ getWindow, sendAnimation }) {
     return Math.floor(Math.max(0, availablePx) / motionProfile.walkStepPx);
   }
 
-  function pickMovePlan(bounds, workArea) {
-    const preferredDirection = Math.random() < 0.5 ? -1 : 1;
-    const directions = [preferredDirection, -preferredDirection];
+  function clampTargetXForStatus(targetX, bounds, workArea) {
+    const left = workArea.x;
+    const right = workArea.x + workArea.width - bounds.width;
+
+    if (petStatus !== PET_STATUS.STANDBY || homeX === undefined) {
+      return clamp(targetX, left, right);
+    }
+
+    const motionProfile = getMotionProfile();
+    return clamp(
+      targetX,
+      Math.max(left, homeX - motionProfile.homeRangePx),
+      Math.min(right, homeX + motionProfile.homeRangePx),
+    );
+  }
+
+  function pickMovePlan(bounds, workArea, preferredDirection) {
+    const resolvedDirection = preferredDirection || (Math.random() < 0.5 ? -1 : 1);
+    const motionProfile = getMotionProfile();
+    const directions = [resolvedDirection, -resolvedDirection];
 
     for (const direction of directions) {
       const availableUnits = getAvailableStepUnits(bounds, direction, workArea);
@@ -134,10 +156,23 @@ function createPetMotionController({ getWindow, sendAnimation }) {
 
       const maxUnits = Math.min(motionProfile.maxWalkStepUnits, availableUnits);
       const stepUnits = randomInteger(motionProfile.minWalkStepUnits, maxUnits);
-      const targetX = bounds.x + direction * stepUnits * motionProfile.walkStepPx;
+      const targetX = clampTargetXForStatus(
+        bounds.x + direction * stepUnits * motionProfile.walkStepPx,
+        bounds,
+        workArea,
+      );
+
+      if (targetX === bounds.x) {
+        continue;
+      }
+
+      const resolvedStepUnits = Math.max(
+        1,
+        Math.round(Math.abs(targetX - bounds.x) / motionProfile.walkStepPx),
+      );
 
       return {
-        stepUnits,
+        stepUnits: resolvedStepUnits,
         targetX,
       };
     }
@@ -145,11 +180,11 @@ function createPetMotionController({ getWindow, sendAnimation }) {
     return undefined;
   }
 
-  function moveRandomly() {
+  function moveRandomly(preferredDirection) {
     const petWindow = getWindow();
 
     if (
-      petStatus !== PET_STATUS.STANDBY ||
+      petStatus === PET_STATUS.DO_NOT_DISTURB ||
       !petWindow ||
       petWindow.isDestroyed() ||
       !petWindow.isVisible() ||
@@ -161,7 +196,7 @@ function createPetMotionController({ getWindow, sendAnimation }) {
     const bounds = petWindow.getBounds();
     const display = screen.getDisplayMatching(bounds);
     const { workArea } = display;
-    const movePlan = pickMovePlan(bounds, workArea);
+    const movePlan = pickMovePlan(bounds, workArea, preferredDirection);
 
     if (!movePlan) {
       scheduleNextWalk();
@@ -180,14 +215,52 @@ function createPetMotionController({ getWindow, sendAnimation }) {
     scheduleNextWalk();
   }
 
+  function moveTowardScreenX(screenX) {
+    const petWindow = getWindow();
+
+    if (
+      petStatus !== PET_STATUS.EXPLORE ||
+      !petWindow ||
+      petWindow.isDestroyed() ||
+      !petWindow.isVisible() ||
+      isMoving
+    ) {
+      return;
+    }
+
+    const bounds = petWindow.getBounds();
+    const centerX = bounds.x + bounds.width / 2;
+    const preferredDirection = screenX < centerX ? -1 : 1;
+
+    clearTimeout(walkTimer);
+    walkTimer = undefined;
+    moveRandomly(preferredDirection);
+  }
+
+  function setHomeFromCurrentPosition() {
+    const petWindow = getWindow();
+
+    if (!petWindow || petWindow.isDestroyed()) {
+      return;
+    }
+
+    homeX = petWindow.getBounds().x;
+  }
+
   function setStatus(status) {
+    const previousStatus = petStatus;
     petStatus = status;
 
-    if (petStatus === PET_STATUS.STANDBY) {
+    stopWalking();
+
+    if (previousStatus !== petStatus || petStatus === PET_STATUS.DO_NOT_DISTURB) {
+      cancelMovement();
+    }
+
+    if (petStatus !== PET_STATUS.DO_NOT_DISTURB) {
       startWalking();
     } else {
-      stopWalking();
-      cancelMovement();
+      sendAnimation(PET_ANIMATION.IDLE);
     }
   }
 
@@ -195,6 +268,8 @@ function createPetMotionController({ getWindow, sendAnimation }) {
     cancelMovement,
     getStatus,
     isActive,
+    moveTowardScreenX,
+    setHomeFromCurrentPosition,
     setStatus,
     startWalking,
     stopWalking,

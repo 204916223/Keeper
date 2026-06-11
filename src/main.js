@@ -1,8 +1,10 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
+const { getAiConfigSnapshot, updateAiProviderConfig } = require('./main/ai-config');
 const {
   BUILT_IN_PETS,
   DEFAULT_PET_ID,
   PET_ANIMATION,
+  PET_INTERACTIONS,
   PET_STATUS,
 } = require('./main/constants');
 const { createMainInterfaceWindow } = require('./main/app-window');
@@ -32,6 +34,7 @@ let actionLog = [];
 
 const statusLabels = {
   [PET_STATUS.DO_NOT_DISTURB]: '勿扰',
+  [PET_STATUS.EXPLORE]: '探索',
   [PET_STATUS.STANDBY]: '待机',
 };
 
@@ -63,9 +66,11 @@ function timeLabel(date = new Date()) {
   return date.toLocaleTimeString('zh-CN', { hour12: false });
 }
 
-function addActionLog(message) {
+function addActionLog(message, options = {}) {
   actionLog = [
     {
+      level: options.level || 'INFO',
+      source: options.source || 'keeper',
       time: timeLabel(),
       message,
     },
@@ -81,6 +86,7 @@ function keeperSnapshot() {
     pets: BUILT_IN_PETS,
     currentPetId,
     petName: currentPet.name,
+    petStats: currentPet.stats,
     status: motionController?.getStatus() || PET_STATUS.STANDBY,
     statusLabel: statusLabels[motionController?.getStatus()] || statusLabels[PET_STATUS.STANDBY],
     gravityEnabled: gravityController?.getEnabled() ?? true,
@@ -142,6 +148,7 @@ function toggleWindowVisibility() {
 function resetWindowPosition() {
   motionController.cancelMovement();
   mainWindow?.setBounds(getDefaultBounds());
+  motionController.setHomeFromCurrentPosition();
 
   if (gravityController.getEnabled()) {
     const isFalling = gravityController.dropToGround();
@@ -172,7 +179,7 @@ function resumeStandbyAfterInteraction() {
     !isHovering &&
     !isMenuOpen &&
     mainWindow?.isVisible() &&
-    motionController.getStatus() === PET_STATUS.STANDBY
+    motionController.getStatus() !== PET_STATUS.DO_NOT_DISTURB
   ) {
     motionController.startWalking();
   }
@@ -190,18 +197,48 @@ function setPetStatus(status) {
   const petName = getCurrentPet().name;
 
   motionController.setStatus(status);
+  syncInputListeningForStatus();
 
-  if (status === PET_STATUS.STANDBY && (isDragging || isHovering || isMenuOpen)) {
+  if (status !== PET_STATUS.DO_NOT_DISTURB && (isDragging || isHovering || isMenuOpen)) {
     motionController.stopWalking();
   }
 
-  if (status === PET_STATUS.STANDBY) {
-    addActionLog(`${petName}正在巡视领地`);
+  if (status === PET_STATUS.EXPLORE) {
+    addActionLog(`${petName}开始探索周围`, { source: 'status' });
+  } else if (status === PET_STATUS.STANDBY) {
+    addActionLog(`${petName}正在巡视领地`, { source: 'status' });
   } else if (status === PET_STATUS.DO_NOT_DISTURB) {
-    addActionLog(`${petName}进入勿扰状态`);
+    addActionLog(`${petName}进入勿扰状态`, { source: 'status' });
   } else {
     broadcastKeeperSnapshot();
   }
+}
+
+function syncInputListeningForStatus() {
+  if (motionController.getStatus() === PET_STATUS.DO_NOT_DISTURB) {
+    keyboardInputController?.stop();
+  } else {
+    keyboardInputController?.start();
+  }
+}
+
+function handleGlobalMouseClick(point) {
+  if (!clickThrough || motionController.getStatus() !== PET_STATUS.EXPLORE) {
+    return;
+  }
+
+  motionController.moveTowardScreenX(point.screenX);
+}
+
+function performPetInteraction(interactionId) {
+  const interaction = PET_INTERACTIONS.find((item) => item.id === interactionId);
+
+  if (!interaction) {
+    addActionLog(`未知交互：${interactionId}`, { level: 'WARN', source: 'interaction' });
+    return;
+  }
+
+  addActionLog(`${getCurrentPet().name}${interaction.message}`, { source: 'interaction' });
 }
 
 function setCurrentPet(petId) {
@@ -237,6 +274,7 @@ function createWindow() {
       getGravityEnabled: gravityController.getEnabled,
       getStatus: motionController.getStatus,
       mainWindow,
+      onInteract: performPetInteraction,
       onHide: hideWindow,
       onOpenMainInterface: showMainInterface,
       onOpen: () => {
@@ -268,7 +306,7 @@ function createWindow() {
         if (!isFalling) {
           resumeStandbyAfterInteraction();
         }
-      } else if (motionController.getStatus() === PET_STATUS.STANDBY) {
+      } else if (motionController.getStatus() !== PET_STATUS.DO_NOT_DISTURB) {
         resumeStandbyAfterInteraction();
       }
     },
@@ -300,6 +338,8 @@ function createTray() {
 
 function registerIpcHandlers() {
   ipcMain.handle('app:get-version', () => app.getVersion());
+  ipcMain.handle('ai:get-config', () => getAiConfigSnapshot());
+  ipcMain.handle('ai:update-provider', (_event, payload) => updateAiProviderConfig(payload));
   ipcMain.handle('keeper:get-snapshot', () => keeperSnapshot());
   ipcMain.handle('keeper:set-current-pet', (_event, petId) => setCurrentPet(petId));
   ipcMain.handle('window:hide', hideWindow);
@@ -341,6 +381,7 @@ app.whenReady().then(() => {
     },
     onDragEnd: () => {
       isDragging = false;
+      motionController.setHomeFromCurrentPosition();
 
       if (!gravityController.dropToGround()) {
         resumeStandbyAfterInteraction();
@@ -349,15 +390,17 @@ app.whenReady().then(() => {
   });
   keyboardInputController = createKeyboardInputController({
     getWindow: () => mainWindow,
+    onMouseClick: handleGlobalMouseClick,
   });
 
   createWindow();
+  motionController.setHomeFromCurrentPosition();
   createTray();
   registerIpcHandlers();
-  keyboardInputController.start();
   motionController.setStatus(PET_STATUS.STANDBY);
+  syncInputListeningForStatus();
   sendPetAnimation(PET_ANIMATION.IDLE);
-  addActionLog(`${getCurrentPet().name}正在巡视领地`);
+  addActionLog(`${getCurrentPet().name}正在巡视领地`, { source: 'status' });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

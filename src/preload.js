@@ -2,6 +2,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('keeper', {
   getVersion: () => ipcRenderer.invoke('app:get-version'),
+  getAiConfig: () => ipcRenderer.invoke('ai:get-config'),
+  updateAiProvider: (payload) => ipcRenderer.invoke('ai:update-provider', payload),
   getKeeperSnapshot: () => ipcRenderer.invoke('keeper:get-snapshot'),
   setCurrentPet: (petId) => ipcRenderer.invoke('keeper:set-current-pet', petId),
   hide: () => ipcRenderer.invoke('window:hide'),

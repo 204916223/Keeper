@@ -1,14 +1,15 @@
 const petImage = document.querySelector('#petImage');
 const petStage = document.querySelector('#petStage');
-const keyboardBubble = document.querySelector('#keyboardBubble');
+const keyboardBubbles = document.querySelector('#keyboardBubbles');
 
 const defaultPetId = 'ice-slime';
 const maxKeyboardTextLength = 18;
+const maxKeyboardBubbles = 3;
 
 let dragging = false;
 let activePointerId;
 let shockTimer;
-let keyboardText = '';
+let keyboardBubbleLines = [];
 let keyboardBubbleTimer;
 
 function eventPoint(event) {
@@ -44,16 +45,50 @@ function setPetAnimation(payload) {
 }
 
 function updateKeyboardBubble() {
-  keyboardBubble.textContent = keyboardText;
-  keyboardBubble.classList.toggle('is-visible', keyboardText.length > 0);
+  keyboardBubbles.replaceChildren();
+
+  const visibleLines = keyboardBubbleLines.map((line) => line || ' ');
+  keyboardBubbles.classList.toggle('is-visible', visibleLines.length > 0);
+
+  visibleLines.forEach((line, index) => {
+    const bubble = document.createElement('div');
+    const age = visibleLines.length - index - 1;
+    bubble.className = 'keyboard-bubble';
+    bubble.dataset.age = String(age);
+    bubble.textContent = line;
+    keyboardBubbles.append(bubble);
+  });
 }
 
 function hideKeyboardBubbleAfter(delayMs) {
   window.clearTimeout(keyboardBubbleTimer);
   keyboardBubbleTimer = window.setTimeout(() => {
-    keyboardText = '';
+    keyboardBubbleLines = [];
     updateKeyboardBubble();
   }, delayMs);
+}
+
+function appendKeyboardBubbleLine() {
+  if (keyboardBubbleLines.length === 0) {
+    keyboardBubbleLines.push('');
+  }
+
+  keyboardBubbleLines.push('');
+
+  if (keyboardBubbleLines.length > maxKeyboardBubbles) {
+    keyboardBubbleLines = keyboardBubbleLines.slice(-maxKeyboardBubbles);
+  }
+}
+
+function appendKeyboardText(value) {
+  if (keyboardBubbleLines.length === 0) {
+    keyboardBubbleLines.push('');
+  }
+
+  const currentIndex = keyboardBubbleLines.length - 1;
+  keyboardBubbleLines[currentIndex] = `${keyboardBubbleLines[currentIndex]}${value}`.slice(
+    -maxKeyboardTextLength,
+  );
 }
 
 function renderKeyboardInput(payload) {
@@ -62,10 +97,16 @@ function renderKeyboardInput(payload) {
   }
 
   if (payload.type === 'backspace') {
-    keyboardText = keyboardText.slice(0, -1);
+    if (keyboardBubbleLines.length > 0) {
+      const currentIndex = keyboardBubbleLines.length - 1;
+      keyboardBubbleLines[currentIndex] = keyboardBubbleLines[currentIndex].slice(0, -1);
+    }
   } else if (payload.type === 'text') {
-    const value = payload.value === '\n' ? '↵' : payload.value === ' ' ? '␣' : payload.value;
-    keyboardText = `${keyboardText}${value}`.slice(-maxKeyboardTextLength);
+    if (payload.value === '\n') {
+      appendKeyboardBubbleLine();
+    } else {
+      appendKeyboardText(payload.value === ' ' ? '␣' : payload.value);
+    }
   }
 
   updateKeyboardBubble();

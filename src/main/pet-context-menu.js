@@ -1,10 +1,11 @@
 const { Menu } = require('electron');
-const { PET_STATUS } = require('./constants');
+const { PET_INTERACTIONS, PET_STATUS } = require('./constants');
 
 function showPetContextMenu({
   getGravityEnabled,
   getStatus,
   mainWindow,
+  onInteract,
   onHide,
   onOpenMainInterface,
   onOpen,
@@ -29,6 +30,12 @@ function showPetContextMenu({
       label: '状态',
       submenu: [
         {
+          label: '探索',
+          type: 'radio',
+          checked: getStatus() === PET_STATUS.EXPLORE,
+          click: () => setStatus(PET_STATUS.EXPLORE),
+        },
+        {
           label: '勿扰',
           type: 'radio',
           checked: getStatus() === PET_STATUS.DO_NOT_DISTURB,
@@ -41,6 +48,13 @@ function showPetContextMenu({
           click: () => setStatus(PET_STATUS.STANDBY),
         },
       ],
+    },
+    {
+      label: '交互',
+      submenu: PET_INTERACTIONS.map((interaction) => ({
+        label: interaction.label,
+        click: () => onInteract(interaction.id),
+      })),
     },
     {
       label: '重力',

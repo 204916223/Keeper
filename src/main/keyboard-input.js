@@ -80,10 +80,11 @@ function createKeyMaps(keys) {
   return { normal, shifted };
 }
 
-function createKeyboardInputController({ getWindow }) {
+function createKeyboardInputController({ getWindow, onMouseClick }) {
   const hook = loadKeyboardHook();
   let isRunning = false;
   let onKeyDown;
+  let onMouseDown;
 
   if (!hook) {
     return {
@@ -141,15 +142,24 @@ function createKeyboardInputController({ getWindow }) {
           sendInput(payload);
         }
       };
+      onMouseDown = (event) => {
+        onMouseClick?.({
+          screenX: event.x,
+          screenY: event.y,
+        });
+      };
 
       uIOhook.on('keydown', onKeyDown);
+      uIOhook.on('mousedown', onMouseDown);
 
       try {
         uIOhook.start();
         isRunning = true;
       } catch (error) {
         uIOhook.off?.('keydown', onKeyDown);
+        uIOhook.off?.('mousedown', onMouseDown);
         onKeyDown = undefined;
+        onMouseDown = undefined;
         console.warn('[keyboard-input] Failed to start global keyboard hook:', error.message);
       }
     },
@@ -162,6 +172,9 @@ function createKeyboardInputController({ getWindow }) {
       if (onKeyDown) {
         uIOhook.off?.('keydown', onKeyDown);
       }
+      if (onMouseDown) {
+        uIOhook.off?.('mousedown', onMouseDown);
+      }
 
       try {
         uIOhook.stop();
@@ -170,6 +183,7 @@ function createKeyboardInputController({ getWindow }) {
       }
 
       onKeyDown = undefined;
+      onMouseDown = undefined;
       isRunning = false;
     },
   };
