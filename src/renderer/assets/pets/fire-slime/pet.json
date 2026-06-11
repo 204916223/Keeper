@@ -1,0 +1,11 @@
+{
+  "id": "fire-slime",
+  "name": "火史莱姆",
+  "builtIn": true,
+  "canvasSize": 128,
+  "animations": {
+    "idle": "idle/idle.apng",
+    "walk-left": "walk-left/walk-left.apng",
+    "walk-right": "walk-right/walk-right.apng"
+  }
+}
