@@ -53,9 +53,11 @@ jobs:
         with:
           name: keeper-${{ matrix.os }}
           path: |
-            release/**
-            !release/builder-debug.yml
-            !release/builder-effective-config.yaml
+            release/*.dmg
+            release/*.zip
+            release/*.exe
+            release/*.blockmap
+            release/latest*.yml
           if-no-files-found: error
 
   publish:
@@ -77,4 +79,9 @@ jobs:
           name: Keeper ${{ github.ref_name }}
           draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
-          files: release-artifacts/**
+          files: |
+            release-artifacts/*.dmg
+            release-artifacts/*.zip
+            release-artifacts/*.exe
+            release-artifacts/*.blockmap
+            release-artifacts/latest*.yml
