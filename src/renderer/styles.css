@@ -69,6 +69,50 @@ body {
   animation: shock-mark-pop 560ms steps(2, end);
 }
 
+.keyboard-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: 112px;
+  max-width: 148px;
+  min-width: 24px;
+  height: 28px;
+  padding: 4px 8px;
+  border: 2px solid rgb(31 69 101 / 92%);
+  border-radius: 7px;
+  color: #15364d;
+  background: rgb(236 250 255 / 94%);
+  box-shadow: 0 3px 0 rgb(31 69 101 / 28%);
+  font: 800 15px/1.2 Arial, sans-serif;
+  text-align: center;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px) scale(0.94);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+
+.keyboard-bubble::after {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 10px;
+  height: 10px;
+  border-right: 2px solid rgb(31 69 101 / 92%);
+  border-bottom: 2px solid rgb(31 69 101 / 92%);
+  background: rgb(236 250 255 / 94%);
+  content: "";
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.keyboard-bubble.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+}
+
 @keyframes shock-shake {
   0%,
   100% {

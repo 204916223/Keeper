@@ -1,15 +1,15 @@
 const petImage = document.querySelector('#petImage');
 const petStage = document.querySelector('#petStage');
+const keyboardBubble = document.querySelector('#keyboardBubble');
 
-const animationSources = {
-  idle: './assets/pets/fire-slime/idle/idle.apng',
-  'walk-left': './assets/pets/fire-slime/walk-left/walk-left.apng',
-  'walk-right': './assets/pets/fire-slime/walk-right/walk-right.apng',
-};
+const defaultPetId = 'ice-slime';
+const maxKeyboardTextLength = 18;
 
 let dragging = false;
 let activePointerId;
 let shockTimer;
+let keyboardText = '';
+let keyboardBubbleTimer;
 
 function eventPoint(event) {
   return {
@@ -30,22 +30,58 @@ function playShock() {
 }
 
 function setPetAnimation(payload) {
-  const name = typeof payload === 'string' ? payload : payload?.name;
-  const animation = animationSources[name] ? name : 'idle';
-  const source = animationSources[animation] || animationSources.idle;
+  const animation = typeof payload === 'string' ? payload : payload?.animation || 'idle';
+  const petId = typeof payload === 'string' ? defaultPetId : payload?.petId || defaultPetId;
+  const source = `./assets/pets/${petId}/${animation}/${animation}.apng`;
 
-  if (petImage.dataset.animation === animation) {
+  if (petImage.dataset.animation === animation && petImage.dataset.petId === petId) {
     return;
   }
 
   petImage.dataset.animation = animation;
+  petImage.dataset.petId = petId;
   petImage.src = source;
 }
 
+function updateKeyboardBubble() {
+  keyboardBubble.textContent = keyboardText;
+  keyboardBubble.classList.toggle('is-visible', keyboardText.length > 0);
+}
+
+function hideKeyboardBubbleAfter(delayMs) {
+  window.clearTimeout(keyboardBubbleTimer);
+  keyboardBubbleTimer = window.setTimeout(() => {
+    keyboardText = '';
+    updateKeyboardBubble();
+  }, delayMs);
+}
+
+function renderKeyboardInput(payload) {
+  if (!payload) {
+    return;
+  }
+
+  if (payload.type === 'backspace') {
+    keyboardText = keyboardText.slice(0, -1);
+  } else if (payload.type === 'text') {
+    const value = payload.value === '\n' ? '↵' : payload.value === ' ' ? '␣' : payload.value;
+    keyboardText = `${keyboardText}${value}`.slice(-maxKeyboardTextLength);
+  }
+
+  updateKeyboardBubble();
+  hideKeyboardBubbleAfter(payload.hideDelayMs || 1400);
+}
+
 petStage.addEventListener('mouseenter', () => {
+  window.keeper?.hoverStart();
+
   if (!dragging) {
     playShock();
   }
+});
+
+petStage.addEventListener('mouseleave', () => {
+  window.keeper?.hoverEnd();
 });
 
 function stopDragging(event) {
@@ -99,3 +135,4 @@ window.addEventListener('mousemove', stopDraggingIfButtonReleased);
 window.addEventListener('blur', stopDragging);
 
 window.keeper?.onPetAnimationChanged(setPetAnimation);
+window.keeper?.onKeyboardTextInput(renderKeyboardInput);

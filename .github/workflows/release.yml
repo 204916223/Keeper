@@ -25,6 +25,11 @@ jobs:
 
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: false
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      APPLE_ID: ${{ secrets.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
     steps:
       - name: Checkout
@@ -41,6 +46,11 @@ jobs:
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
           npm version "$VERSION" --no-git-tag-version --allow-same-version
+
+      - name: Enable macOS signing when configured
+        if: runner.os == 'macOS' && env.CSC_LINK != ''
+        shell: bash
+        run: echo "CSC_IDENTITY_AUTO_DISCOVERY=true" >> "$GITHUB_ENV"
 
       - name: Install dependencies
         run: npm ci

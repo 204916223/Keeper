@@ -1,7 +1,6 @@
-const { PET_CANVAS_SIZE } = require('./constants');
-
 function createManualDragController({ getWindow, onDragEnd, onDragMove, onDragStart }) {
   let dragging = false;
+  let dragOffset = { x: 0, y: 0 };
 
   function getBoundsForPoint(point) {
     const petWindow = getWindow();
@@ -14,8 +13,8 @@ function createManualDragController({ getWindow, onDragEnd, onDragMove, onDragSt
 
     return {
       ...bounds,
-      x: Math.round(point.screenX - bounds.width / 2),
-      y: Math.round(point.screenY - (bounds.height - PET_CANVAS_SIZE) / 2),
+      x: Math.round(point.screenX - dragOffset.x),
+      y: Math.round(point.screenY - dragOffset.y),
     };
   }
 
@@ -27,8 +26,11 @@ function createManualDragController({ getWindow, onDragEnd, onDragMove, onDragSt
     }
 
     dragging = true;
+    dragOffset = {
+      x: point.screenX - petWindow.getBounds().x,
+      y: point.screenY - petWindow.getBounds().y,
+    };
     onDragStart?.();
-    petWindow.setBounds(getBoundsForPoint(point));
   }
 
   function move(point) {

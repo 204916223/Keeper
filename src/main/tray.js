@@ -6,6 +6,7 @@ function createKeeperTray({
   getClickThrough,
   getWindow,
   onQuit,
+  onOpenMainInterface,
   onResetPosition,
   onToggleGravity,
   onToggleClickThrough,
@@ -23,6 +24,11 @@ function createKeeperTray({
     const mainWindow = getWindow();
 
     tray.setContextMenu(Menu.buildFromTemplate([
+      {
+        label: '打开主界面',
+        click: onOpenMainInterface,
+      },
+      { type: 'separator' },
       {
         label: mainWindow?.isVisible() ? '隐藏 Keeper' : '显示 Keeper',
         click: onToggleVisibility,

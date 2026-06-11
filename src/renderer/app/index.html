@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Keeper</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="settings-panel" aria-labelledby="settingsTitle">
+        <h1 class="settings-title" id="settingsTitle">设置</h1>
+        <div class="settings-groups">
+          <section class="settings-group" aria-labelledby="characterSettingsTitle">
+            <h2 class="settings-group-title" id="characterSettingsTitle">角色设置</h2>
+            <label class="setting-row" for="currentPetSelect">
+              <span>当前角色</span>
+              <select id="currentPetSelect"></select>
+            </label>
+          </section>
+
+          <section class="settings-group" aria-labelledby="windowSettingsTitle">
+            <h2 class="settings-group-title" id="windowSettingsTitle">窗口设置</h2>
+            <button class="primary-button" id="showPetButton" type="button">展示 keeper</button>
+          </section>
+        </div>
+      </section>
+
+      <section class="preview-panel" aria-label="keeper preview">
+        <img
+          class="keeper-preview"
+          id="keeperPreview"
+          src="../assets/pets/ice-slime/idle/idle.apng"
+          alt="待机状态的冰史莱姆"
+        />
+      </section>
+
+      <section class="status-panel" aria-labelledby="statusTitle">
+        <h2 class="sr-only" id="statusTitle">keeper状态</h2>
+        <dl class="status-list">
+          <div class="status-row">
+            <dt>状态</dt>
+            <dd id="petStatus">待机</dd>
+          </div>
+          <div class="status-row">
+            <dt>名字</dt>
+            <dd id="petName">冰史莱姆</dd>
+          </div>
+          <div class="status-row">
+            <dt>重力</dt>
+            <dd id="gravityStatus">开启</dd>
+          </div>
+          <div class="status-row">
+            <dt>桌宠</dt>
+            <dd id="visibleStatus">显示</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="log-panel" aria-labelledby="logTitle">
+        <h2 class="sr-only" id="logTitle">keeper行为记录</h2>
+        <ul class="action-log" id="actionLog" aria-live="polite"></ul>
+      </section>
+    </main>
+
+    <script src="./renderer.js"></script>
+  </body>
+</html>

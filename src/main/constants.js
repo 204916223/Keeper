@@ -1,6 +1,18 @@
 const WINDOW_WIDTH = 160;
 const WINDOW_HEIGHT = 160;
-const PET_CANVAS_SIZE = 128;
+
+const BUILT_IN_PETS = [
+  {
+    id: 'ice-slime',
+    name: '冰史莱姆',
+  },
+  {
+    id: 'fire-slime',
+    name: '火史莱姆',
+  },
+];
+
+const DEFAULT_PET_ID = 'ice-slime';
 
 const PET_STATUS = {
   DO_NOT_DISTURB: 'do-not-disturb',
@@ -30,9 +42,10 @@ const DEFAULT_GRAVITY_PROFILE = {
 };
 
 module.exports = {
+  BUILT_IN_PETS,
+  DEFAULT_PET_ID,
   DEFAULT_GRAVITY_PROFILE,
   DEFAULT_MOTION_PROFILE,
-  PET_CANVAS_SIZE,
   PET_ANIMATION,
   PET_STATUS,
   WALK_FRAME_MS,

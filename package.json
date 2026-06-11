@@ -41,6 +41,9 @@
       "src/**/*",
       "package.json"
     ],
+    "asarUnpack": [
+      "node_modules/uiohook-napi/prebuilds/**/*"
+    ],
     "mac": {
       "category": "public.app-category.entertainment"
     },
@@ -56,5 +59,8 @@
       ],
       "category": "Game"
     }
+  },
+  "dependencies": {
+    "uiohook-napi": "^1.5.5"
   }
 }
